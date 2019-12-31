@@ -12,9 +12,9 @@ public interface StorageService {
 
     void store(MultipartFile file);
 
-    Stream<Path> loadAll();
-
     Path load(String filename);
+
+    Stream<Path> loadAll();
 
     Resource loadAsResource(String filename);
 

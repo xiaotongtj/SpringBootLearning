@@ -30,6 +30,7 @@ public class FileSystemStorageService implements StorageService {
             if (file.isEmpty()) {
                 throw new StorageException("Failed to store empty file " + file.getOriginalFilename());
             }
+            //copy 源 + 目标（rootLocation/filename）
             Files.copy(file.getInputStream(), this.rootLocation.resolve(file.getOriginalFilename()));
         } catch (IOException e) {
             throw new StorageException("Failed to store file " + file.getOriginalFilename(), e);
@@ -39,29 +40,37 @@ public class FileSystemStorageService implements StorageService {
     @Override
     public Stream<Path> loadAll() {
         try {
-            return Files.walk(this.rootLocation, 1)
+            System.out.println("---------loadAll before---------");
+            Files.walk(this.rootLocation, 1).forEach(System.out::println);
+            Stream<Path> pathStream = Files.walk(this.rootLocation, 1)//获取rootLocaltion中路径下的所有path,排除了根目录
                     .filter(path -> !path.equals(this.rootLocation))
-                    .map(path -> this.rootLocation.relativize(path));
+                    .map(this.rootLocation::relativize);
+
+            System.out.println("---------loadAll after---------");
+            //pathStream.forEach(System.out::println);
+
+            return pathStream;
         } catch (IOException e) {
             throw new StorageException("Failed to read stored files", e);
         }
 
     }
 
+    //拼接路径
     @Override
     public Path load(String filename) {
         return rootLocation.resolve(filename);
     }
 
+    //
     @Override
     public Resource loadAsResource(String filename) {
         try {
             Path file = load(filename);
             Resource resource = new UrlResource(file.toUri());
-            if(resource.exists() || resource.isReadable()) {
+            if (resource.exists() || resource.isReadable()) {
                 return resource;
-            }
-            else {
+            } else {
                 throw new StorageFileNotFoundException("Could not read file: " + filename);
 
             }
@@ -82,5 +91,13 @@ public class FileSystemStorageService implements StorageService {
         } catch (IOException e) {
             throw new StorageException("Could not initialize storage", e);
         }
+    }
+
+    public static void main(String[] args) {
+        //目录和目录下文件的相对路径就是文件名称
+        Path path = Paths.get("D:/hello");
+        Path path1 = Paths.get("D:/hello/hello.txt");
+        Path relativize = path.relativize(path1);
+        System.out.println(relativize);
     }
 }

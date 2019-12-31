@@ -15,6 +15,8 @@ import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBui
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -34,15 +36,22 @@ public class FileUploadController {
     @GetMapping("/")
     public String listUploadedFiles(Model model) throws IOException {
 
-        model.addAttribute("files", storageService
+        List<String> files = storageService
                 .loadAll()
-                .map(path ->
-                        MvcUriComponentsBuilder
-                                .fromMethodName(FileUploadController.class, "serveFile", path.getFileName().toString())
-                                .build().toString())
-                .collect(Collectors.toList()));
+                .map(this::getServeFile)
+                .collect(Collectors.toList());
+
+        model.addAttribute("files", files);
+
 
         return "uploadForm";
+    }
+
+    private String getServeFile(Path path) {
+        String serveFile = MvcUriComponentsBuilder
+                .fromMethodName(FileUploadController.class, "serveFile", path.getFileName().toString())
+                .build().toString();
+        return serveFile;
     }
 
     @GetMapping("/files/{filename:.+}")
@@ -52,7 +61,7 @@ public class FileUploadController {
         Resource file = storageService.loadAsResource(filename);
         return ResponseEntity
                 .ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\""+file.getFilename()+"\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"")
                 .body(file);
     }
 
@@ -71,5 +80,38 @@ public class FileUploadController {
     public ResponseEntity handleStorageFileNotFound(StorageFileNotFoundException exc) {
         return ResponseEntity.notFound().build();
     }
+
+//    public static void main(String[] args) {
+//
+//        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+//        params.put("id", Collections.singletonList("1"));
+//        params.put("name", Collections.singletonList("张三"));
+//        String uri = UriComponentsBuilder
+//                .fromHttpUrl("http://localhost:8080//hello")
+//                .queryParams(params).build().toUriString(); //params是个Map
+//        System.out.println(uri);
+//
+//
+//        String uri = UriComponentsBuilder
+//                .fromUriString("http://example.com/hotels/{hotel}/bookings/{booking}")
+//                .build().expand("43","32").encode().toUriString();
+//        URI uri1 = uriComponents.expand("42", "21").encode().toUri();
+//
+//
+//        String uri = UriComponentsBuilder.newInstance()
+//                .scheme("http").host("example.com").path("/hotels/{hotel}/bookings/{booking}").build()
+//                .expand("42", "21")
+//                .encode().toUriString();
+//
+//       /* ServletUriComponentsBuilder ucb = ServletUriComponentsBuilder.fromRequest((HttpServletRequest) null)
+//                .replaceQueryParam("accountId", "{id}").build()
+//                .expand("123")
+//                .encode();*/
+//
+//        UriComponents uriComponents4 = MvcUriComponentsBuilder
+//                .fromMethodName(FileUploadController.class, "getBooking", 21).buildAndExpand(42);
+//
+//        //MvcUriComponentsBuilder.fromMappingName()
+//    }
 
 }
